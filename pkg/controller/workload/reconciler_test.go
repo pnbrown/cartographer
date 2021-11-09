@@ -17,6 +17,8 @@ package workload_test
 import (
 	"context"
 	"errors"
+	"github.com/vmware-tanzu/cartographer/pkg/repository"
+	corev1 "k8s.io/api/core/v1"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -47,15 +49,18 @@ import (
 var _ = Describe("Reconciler", func() {
 	Describe("Reconcile", func() {
 		var (
-			out              *Buffer
-			reconciler       *workload.Reconciler
-			ctx              context.Context
-			req              ctrl.Request
-			repo             *repositoryfakes.FakeRepository
-			conditionManager *conditionsfakes.FakeConditionManager
-			rlzr             *workloadfakes.FakeRealizer
-			wl               *v1alpha1.Workload
-			workloadLabels   map[string]string
+			out                    *Buffer
+			reconciler             *workload.Reconciler
+			ctx                    context.Context
+			req                    ctrl.Request
+			repo                   *repositoryfakes.FakeRepository
+			builtResourceRealizer  *workloadfakes.FakeResourceRealizer
+			conditionManager       *conditionsfakes.FakeConditionManager
+			rlzr                   *workloadfakes.FakeRealizer
+			wl                     *v1alpha1.Workload
+			workloadLabels         map[string]string
+			resourceRealizerSecret *corev1.Secret
+			serviceAccountSecret   *corev1.Secret
 		)
 
 		BeforeEach(func() {
@@ -75,12 +80,18 @@ var _ = Describe("Reconciler", func() {
 			rlzr.RealizeReturns(nil)
 
 			repo = &repositoryfakes.FakeRepository{}
+
 			scheme := runtime.NewScheme()
 			err := registrar.AddToScheme(scheme)
 			Expect(err).NotTo(HaveOccurred())
 			repo.GetSchemeReturns(scheme)
-
-			reconciler = workload.NewReconciler(repo, fakeConditionManagerBuilder, rlzr)
+			repo.GetServiceAccountSecretReturns(serviceAccountSecret, nil)
+			resourceRealizerBuilder := func(ctx context.Context, secret *corev1.Secret, workload *v1alpha1.Workload, systemRepo repository.Repository) (realizer.ResourceRealizer, error) {
+				resourceRealizerSecret = secret
+				builtResourceRealizer = &workloadfakes.FakeResourceRealizer{}
+				return builtResourceRealizer, nil
+			}
+			reconciler = workload.NewReconciler(repo, fakeConditionManagerBuilder, resourceRealizerBuilder, rlzr)
 
 			req = ctrl.Request{
 				NamespacedName: types.NamespacedName{Name: "my-workload-name", Namespace: "my-namespace"},
@@ -92,6 +103,9 @@ var _ = Describe("Reconciler", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Generation: 1,
 					Labels:     workloadLabels,
+				},
+				Spec: v1alpha1.WorkloadSpec{
+					ServiceAccountName: "alternate-service-account-name",
 				},
 			}
 			repo.GetWorkloadReturns(wl, nil)
@@ -216,6 +230,18 @@ var _ = Describe("Reconciler", func() {
 			It("calls the condition manager to report the resources have been submitted", func() {
 				_, _ = reconciler.Reconcile(ctx, req)
 				Expect(conditionManager.AddPositiveArgsForCall(1)).To(Equal(workload.ResourcesSubmittedCondition()))
+			})
+
+			It("uses the service account specified by the workload for realizing resources", func() {
+				_, _ = reconciler.Reconcile(ctx, req)
+
+				Expect(repo.GetServiceAccountSecretCallCount()).To(Equal(1))
+				Expect(repo.GetServiceAccountSecretArgsForCall(0)).To(Equal("alternate-service-account-name"))
+				Expect(resourceRealizerSecret).To(Equal(serviceAccountSecret))
+
+				Expect(rlzr.RealizeCallCount()).To(Equal(1))
+				_, resourceRealizer, _ := rlzr.RealizeArgsForCall(0)
+				Expect(resourceRealizer).To(Equal(builtResourceRealizer))
 			})
 
 			Context("but getting the object GVK fails", func() {

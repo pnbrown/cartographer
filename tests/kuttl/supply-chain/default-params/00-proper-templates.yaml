@@ -96,3 +96,25 @@ spec:
     spec:
       value:
         mythic_creatures: $(params.tricksters)$
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+secrets:
+  - name: default
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: default
+  annotations:
+    kubernetes.io/service-account.name: default
+data:
+  token: "SOMETOKEN-b64'd"
+  ca.crt: "SOMECERT-b64'd"
+type: kubernetes.io/service-account-token

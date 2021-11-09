@@ -25,6 +25,8 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
+require github.com/ghodss/yaml v1.0.0
+
 require (
 	4d63.com/gochecknoglobals v0.0.0-20201008074935-acfc0b28355a // indirect
 	cloud.google.com/go v0.81.0 // indirect
@@ -53,6 +55,8 @@ require (
 	github.com/daixiang0/gci v0.2.9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/denis-tingajkin/go-header v0.4.2 // indirect
+	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/drone/envsubst/v2 v2.0.0-20210615175204-7bf45dbf5372 // indirect
 	github.com/esimonov/ifshort v1.0.2 // indirect
 	github.com/ettle/strcase v0.1.1 // indirect
 	github.com/evanphx/json-patch v4.11.0+incompatible // indirect
@@ -88,6 +92,8 @@ require (
 	github.com/golangci/revgrep v0.0.0-20210208091834-cd28932614b5 // indirect
 	github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
+	github.com/google/go-github/v33 v33.0.0 // indirect
+	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
@@ -134,6 +140,7 @@ require (
 	github.com/nishanths/predeclared v0.2.1 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
+	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/phayes/checkstyle v0.0.0-20170904204023-bfd46e6a821d // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -195,6 +202,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	honnef.co/go/tools v0.2.1 // indirect
+	k8s.io/cluster-bootstrap v0.21.4 // indirect
 	k8s.io/component-base v0.22.3 // indirect
 	k8s.io/klog/v2 v2.9.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e // indirect

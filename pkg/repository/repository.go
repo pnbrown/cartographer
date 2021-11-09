@@ -17,6 +17,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"strings"
 
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -48,7 +49,10 @@ type Repository interface {
 	GetPipeline(name string, namespace string) (*v1alpha1.Pipeline, error)
 	ListUnstructured(obj *unstructured.Unstructured) ([]*unstructured.Unstructured, error)
 	GetDelivery(name string) (*v1alpha1.ClusterDelivery, error)
+	GetServiceAccountSecret(serviceAccountName, ns string) (*corev1.Secret, error)
 }
+
+type RepositoryBuilder func(client client.Client, repoCache RepoCache, logger Logger) Repository
 
 type repository struct {
 	rc     RepoCache
@@ -62,6 +66,58 @@ func NewRepository(client client.Client, repoCache RepoCache, logger Logger) Rep
 		cl:     client,
 		logger: logger,
 	}
+}
+
+func (r *repository) GetServiceAccountSecret(serviceAccountName, ns string) (*corev1.Secret, error) {
+	//sal := &corev1.ServiceAccountList{}
+	//err := r.cl.List(context.TODO(), sal)
+	//if err != nil {
+	//	panic(fmt.Errorf("well shit %w", err))
+	//}
+	//
+	//panic(fmt.Errorf("oh well %+v", sal))
+
+	serviceAccount := &corev1.ServiceAccount{}
+
+	key := client.ObjectKey{
+		Name: serviceAccountName,
+		Namespace: ns,
+	}
+
+	err := r.cl.Get(context.TODO(), key, serviceAccount)
+
+	//if err != nil && !api_errors.IsNotFound(err) {
+	//	return nil, fmt.Errorf("get: %w", err) //TODO: test? whats this errror msg?
+	//}
+	//
+	//if api_errors.IsNotFound(err) {
+	//	return nil, nil //TODO: test? is that right?
+	//}
+	//
+	if err != nil {
+		panic(fmt.Errorf("aergh (ns:%v) %w", key, err))
+	}
+
+	//panic(fmt.Errorf("mommy %+v", serviceAccount))
+
+	for _, secretRef := range serviceAccount.Secrets {
+		secret := &corev1.Secret{}
+
+		secretKey := client.ObjectKey{
+			Name: secretRef.Name,
+			Namespace: ns,
+		}
+
+		err := r.cl.Get(context.TODO(), secretKey, secret)
+		if err != nil {
+			return nil, fmt.Errorf("Getting service account secret: %s", err) //FIXME: whats this errror? test?
+		}
+
+		if secret.Type == corev1.SecretTypeServiceAccountToken {
+			return secret, nil
+		}
+	}
+	return nil, nil //FIXME: is that what we want ?? errror? test????
 }
 
 func (r *repository) GetDelivery(name string) (*v1alpha1.ClusterDelivery, error) {

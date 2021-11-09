@@ -37,13 +37,15 @@ type Reconciler struct {
 	repo                    repository.Repository
 	conditionManager        conditions.ConditionManager
 	conditionManagerBuilder conditions.ConditionManagerBuilder
+	resourceRealizerBuilder realizer.ResourceRealizerBuilder
 	realizer                realizer.Realizer
 }
 
-func NewReconciler(repo repository.Repository, conditionManagerBuilder conditions.ConditionManagerBuilder, realizer realizer.Realizer) *Reconciler {
+func NewReconciler(repo repository.Repository, conditionManagerBuilder conditions.ConditionManagerBuilder, resourceRealizerBuilder realizer.ResourceRealizerBuilder, realizer realizer.Realizer) *Reconciler {
 	return &Reconciler{
 		repo:                    repo,
 		conditionManagerBuilder: conditionManagerBuilder,
+		resourceRealizerBuilder: resourceRealizerBuilder,
 		realizer:                realizer,
 	}
 }
@@ -87,7 +89,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 	r.conditionManager.AddPositive(SupplyChainReadyCondition())
 
-	err = r.realizer.Realize(ctx, realizer.NewResourceRealizer(workload, r.repo), supplyChain)
+	secret, err := r.repo.GetServiceAccountSecret(workload.Spec.ServiceAccountName, req.Namespace)
+	if err != nil {
+		panic(err) //TODO: also handle...
+	}
+
+	resourceRealizer, err := r.resourceRealizerBuilder(ctx, secret, workload, r.repo)
+	if err != nil {
+		panic("guess the devs forgot this one")//TODO: dont forget
+	}
+
+	err = r.realizer.Realize(ctx, resourceRealizer, supplyChain)
 	if err != nil {
 		switch typedErr := err.(type) {
 		case realizer.GetClusterTemplateError:

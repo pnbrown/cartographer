@@ -19,6 +19,7 @@ package registrar
 import (
 	"context"
 	"fmt"
+	v1 "k8s.io/api/core/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -53,6 +54,10 @@ func AddToScheme(scheme *runtime.Scheme) error {
 		return fmt.Errorf("cartographer v1alpha1 add to scheme: %w", err)
 	}
 
+	//FIXME: why/should this be here? apparently needed to do Get on v1.ServiceAccount, and presumably v1.Secret
+	if err := v1.AddToScheme(scheme); err != nil {
+		return fmt.Errorf("core v1 add to scheme: %w", err)
+	}
 	return nil
 }
 
@@ -88,7 +93,10 @@ func registerWorkloadController(mgr manager.Manager) error {
 	)
 
 	ctrl, err := pkgcontroller.New("workload", mgr, pkgcontroller.Options{
-		Reconciler: workload.NewReconciler(repo, conditions.NewConditionManager, realizerworkload.NewRealizer()),
+		Reconciler: workload.NewReconciler(repo,
+			conditions.NewConditionManager,
+			realizerworkload.NewResourceRealizerBuilder(mgr.GetClient(), repository.NewRepository, realizerworkload.NewClientBuilder(mgr.GetConfig().Host)),
+			realizerworkload.NewRealizer()),
 	})
 	if err != nil {
 		return fmt.Errorf("controller new: %w", err)
