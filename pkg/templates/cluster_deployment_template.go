@@ -46,7 +46,7 @@ func (t clusterDeploymentTemplate) GetOutput(stampedObject *unstructured.Unstruc
 
 	output := &Output{Source: &Source{}}
 
-	originalSource, ok := templatingContext["source"].(*SourceInput)
+	originalSource, ok := templatingContext["deployment"].(*SourceInput)
 	if !ok {
 		return nil, fmt.Errorf("original source not found in context: %v", templatingContext)
 	}

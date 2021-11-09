@@ -50,6 +50,7 @@ func (o Outputs) GenerateInputs(resource *v1alpha1.ClusterDeliveryResource) *tem
 	inputs := &templates.Inputs{
 		Sources: map[string]templates.SourceInput{},
 		Configs: map[string]templates.ConfigInput{},
+		Deployment: templates.SourceInput{},
 	}
 
 	for _, referenceSource := range resource.Sources {
@@ -69,6 +70,16 @@ func (o Outputs) GenerateInputs(resource *v1alpha1.ClusterDeliveryResource) *tem
 			inputs.Configs[referenceConfig.Name] = templates.ConfigInput{
 				Config: config,
 				Name:   referenceConfig.Name,
+			}
+		}
+	}
+
+	if resource.Deployment != nil {
+		deployment := o.getResourceSource(resource.Deployment.Resource)
+		if deployment != nil {
+			inputs.Deployment = templates.SourceInput{
+				URL:      deployment.URL,
+				Revision: deployment.Revision,
 			}
 		}
 	}

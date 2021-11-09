@@ -34,6 +34,7 @@ type Inputs struct {
 	Sources map[string]SourceInput
 	Images  map[string]ImageInput
 	Configs map[string]ConfigInput
+	Deployment SourceInput
 }
 
 func (i Inputs) OnlySource() *SourceInput {
